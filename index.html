@@ -198,13 +198,13 @@
           <span class="score-cta">Ver dashboard completo →</span>
         </div>
         <div class="score-grid">
-          <div class="score-item"><strong>132</strong><span>Contas na base</span></div>
+          <div class="score-item"><strong data-live="contasNaBase">132</strong><span>Contas na base</span></div>
           <div class="score-item"><strong class="pending">—</strong><span>Cobertura do ciclo</span></div>
           <div class="score-item"><strong class="pending">—</strong><span>Perfect Outlets</span></div>
           <div class="score-item"><strong class="pending">—</strong><span>Contratos ativos</span></div>
-          <div class="score-item"><strong>13</strong><span>Projetos ativos</span></div>
+          <div class="score-item"><strong data-live="projetosAtivos">13</strong><span>Projetos ativos</span></div>
         </div>
-        <div class="score-note">— indica indicador ainda sem fórmula validada. O dado vivo e o cálculo completo ficam no dashboard.</div>
+        <div class="score-note">— indica indicador ainda sem fórmula validada. O dado vivo e o cálculo completo ficam no dashboard. <span id="live-status"></span></div>
       </a>
     </section>
 
@@ -216,11 +216,11 @@
           <h3>Jerry</h3>
           <p>Contas estratégicas, negociações complexas, fortificação e referência técnica de campo.</p>
           <div class="ba-metrics">
-            <div><strong>52</strong><span>contas</span></div>
-            <div><strong>17</strong><span>perfect outlets</span></div>
+            <div><strong data-live="jerryContas">52</strong><span>contas</span></div>
+            <div><strong data-live="jerryPerfectOutlets">17</strong><span>perfect outlets</span></div>
             <div><strong>3</strong><span>contratos ativos</span></div>
             <div><strong>98%</strong><span>cobertura</span></div>
-            <div><strong>36%</strong><span>score ponderado</span></div>
+            <div><strong data-live="jerryScorePct">36%</strong><span>score ponderado</span></div>
           </div>
           <a class="arrow-link" data-link="jerryHub" target="_blank" rel="noopener"><span>Abrir hub</span><span>→</span></a>
         </div>
@@ -229,7 +229,7 @@
           <h3>Julia</h3>
           <p>Construção de baseline, aumento de cobertura e desenvolvimento de autonomia comercial.</p>
           <div class="ba-metrics">
-            <div><strong>51</strong><span>contas</span></div>
+            <div><strong data-live="juliaContas">51</strong><span>contas</span></div>
           </div>
           <div class="ba-status"><b>Baseline em construção</b></div>
           <a class="arrow-link" data-link="juliaHub" target="_blank" rel="noopener"><span>Abrir hub</span><span>→</span></a>
@@ -375,6 +375,64 @@
         }
       });
     });
+
+    // Dado vivo — números puxados direto do Google Sheets, sem backend.
+    // Se a planilha ficar indisponível, os valores fixos no HTML acima
+    // continuam valendo (nada quebra, só deixa de atualizar).
+    var LIVE_CELLS = {
+      contasNaBase:        { sheet: "Dashboard Rio", range: "A5" },
+      jerryContas:          { sheet: "Dashboard Rio", range: "A9" },
+      jerryPerfectOutlets:  { sheet: "Dashboard Rio", range: "D9" },
+      jerryScorePct:        { sheet: "Dashboard Rio", range: "J9", asPercent: true },
+      juliaContas:          { sheet: "Dashboard Rio", range: "A13" },
+      projetosAtivos:       { sheet: "Projetos & Eventos", range: "A4:A300", count: true }
+    };
+
+    function gvizUrl(cfg) {
+      var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json";
+      url += "&sheet=" + encodeURIComponent(cfg.sheet);
+      url += "&range=" + encodeURIComponent(cfg.range);
+      if (cfg.count) url += "&tq=" + encodeURIComponent("select count(A) where A is not null");
+      return url;
+    }
+
+    function fetchLiveCell(cfg) {
+      return fetch(gvizUrl(cfg)).then(function(res){ return res.text(); }).then(function(text){
+        var json = JSON.parse(text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1));
+        var row = json.table && json.table.rows && json.table.rows[0];
+        var cell = row && row.c && row.c[0];
+        return cell ? cell.v : null;
+      });
+    }
+
+    function loadLiveData() {
+      var keys = Object.keys(LIVE_CELLS);
+      Promise.all(keys.map(function(key){
+        return fetchLiveCell(LIVE_CELLS[key]).catch(function(){ return null; });
+      })).then(function(values){
+        var updated = false;
+        keys.forEach(function(key, i){
+          var v = values[i];
+          if (v === null || v === undefined || isNaN(v)) return;
+          var cfg = LIVE_CELLS[key];
+          var display = cfg.asPercent ? Math.round(v * 100) + "%" : Math.round(v);
+          document.querySelectorAll('[data-live="' + key + '"]').forEach(function(el){ el.textContent = display; });
+          updated = true;
+        });
+        if (updated) {
+          var status = document.getElementById("live-status");
+          if (status) {
+            var now = new Date();
+            var pad = function(n){ return String(n).padStart(2, "0"); };
+            status.textContent = "Dado vivo atualizado às " + pad(now.getHours()) + ":" + pad(now.getMinutes()) + ".";
+          }
+        }
+      }).catch(function(err){
+        console.warn("Dado vivo indisponível, mantendo valores fixos.", err);
+      });
+    }
+
+    loadLiveData();
   </script>
 </body>
 </html>
