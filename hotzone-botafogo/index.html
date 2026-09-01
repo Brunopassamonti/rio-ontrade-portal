@@ -1,1 +1,260 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Botafogo–Humaitá · Censo PDV Jägermeister</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><style>:root{--g:#137a42;--o:#e66d2c;--d:#11372a;--c:#f2eee3}*{box-sizing:border-box}body{margin:0;font:12px Arial;background:var(--c)}.app{height:100vh;display:grid;grid-template-columns:380px 1fr}aside{background:var(--d);color:#fff;padding:18px;overflow:auto}main{position:relative}h1{font-size:27px;line-height:1;margin:0;text-transform:uppercase}.sub,.note{font-size:10px;line-height:1.5;color:#cfe0d5}.sub{margin:10px 0 16px}.k{display:grid;grid-template-columns:1fr 1fr;gap:7px}.k div{padding:10px;border:1px solid #ffffff18;border-radius:9px;background:#ffffff0a}.k b{font-size:25px;display:block}.k span{font-size:8px;text-transform:uppercase;color:#cfe0d5}.t{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#9fbaaa;margin:18px 0 7px}.f{display:grid;grid-template-columns:1fr 1fr;gap:6px}button{border:0;border-radius:7px;padding:8px;text-align:left;background:#fff;font-size:10px;font-weight:700;cursor:pointer}button.active{background:#d9f1e1}#map{height:100%;width:100%}.leaflet-tile-pane{filter:grayscale(85%) brightness(1.04)}.pin{position:relative;width:28px;height:36px;transform:translate(-14px,-34px)}.shape{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #111;box-shadow:0 2px 6px #0004}.letter{position:absolute;left:0;top:0;width:26px;height:26px;display:grid;place-items:center;font-weight:900;font-size:10px;color:#fff}.tip{background:#fffdf7ee!important;border:1px solid #111!important;color:#111!important;font-size:9px!important;font-weight:700!important;box-shadow:none!important}.tip:before{display:none!important}.legend{position:absolute;z-index:500;right:12px;top:12px;background:#fffdf7f7;padding:10px;border:1px solid #111;border-radius:8px;font-size:10px;line-height:1.6}.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}.item,.hz{padding:7px 0;border-bottom:1px solid #ffffff14;font-size:10px}.item a{color:#fff;text-decoration:none;font-weight:700}.meta{display:block;color:#b8cdc0;font-size:9px;margin-top:2px}.hz b{float:right}.popup p{font-size:10px;margin:3px 0}.popup a{display:inline-block;margin-top:5px;color:#111}@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:48vh 52vh}}</style></head><body><div class="app"><aside><h1>Botafogo–Humaitá<br>Censo PDV</h1><div class="sub">Base ampliada: 95 PDVs. Verde = presença Jäger confirmada. Laranja = presença não confirmada. B = bar · R = restaurante/bar · M = mercado · D = bebidas/conveniência.</div><div class="k"><div><b id="nTotal">95</b><span>PDVs</span></div><div><b id="nJager">12</b><span>Jäger confirmado</span></div><div><b id="nBars">—</b><span>Bares + restaurantes</span></div><div><b id="nNew">57</b><span>Novos no censo</span></div></div><div class="t">Filtros</div><div class="f"><button class="active" data-f="all">Todos</button><button data-f="jager">Com Jäger</button><button data-f="bar">Bares + restaurantes</button><button data-f="market">Mercados</button><button data-f="bev">Bebidas</button><button data-f="new">Novos PDVs</button><button data-f="HZ01">HZ01 Core</button><button data-f="HZ02">HZ02 Álvaro Ramos</button><button data-f="HZ03">HZ03 Voluntários</button><button data-f="HZ04">HZ04 Farani/Praia</button><button data-f="HZ05">HZ05 Humaitá/Cobal</button><button data-f="HZ06">HZ06 Visconde</button><button data-f="HZ07">HZ07 São Clemente</button><button data-f="entorno">Entorno</button></div><div class="t">Hotzones</div><div id="hz"></div><div class="t">PDVs visíveis</div><div id="list"></div><div class="note">Pesquisa pública + base de acompanhamento Jäger. Novos PDVs ficam como presença não confirmada até cruzamento comercial ou validação em campo.</div></aside><main><div id="map"></div><div class="legend"><b>Cor</b><br><span class="sw" style="background:#137a42"></span>Jäger confirmado<br><span class="sw" style="background:#e66d2c"></span>Não confirmado<br><br><b>Tipo</b><br>B bar · R restaurante · M mercado · D bebidas</div></main></div><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>let DATA=[];const files=[1,2,3,4,5].map(n=>`data/pdv-${n}.json`);const map=L.map('map').setView([-22.9565,-43.188],14.2);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);let cache=JSON.parse(localStorage.getItem('bh95_v2')||'{}'),pts=[],cur='all';function hz(v){const a=(v.address||'').toLowerCase(),n=parseInt((a.match(/,\s*(\d+)/)||[])[1]||'0');if(a.includes('álvaro ramos'))return'HZ02 — Álvaro Ramos';if(a.includes('voluntários da pátria')&&n>=430)return'HZ05 — Humaitá / Cobal';if(a.includes('voluntários da pátria')||a.includes('nelson mandela')||a.includes('são joão batista'))return'HZ03 — Voluntários / Baixo Botafogo';if(a.includes('farani')||a.includes('bambina')||a.includes('praia de botafogo'))return'HZ04 — Farani / Faculdade / Praia';if(a.includes('capitão salomão')||a.includes('humaitá'))return'HZ05 — Humaitá / Cobal';if(a.includes('visconde de silva')||a.includes('visconde de caravelas')||a.includes('conde de irajá')||a.includes('rua da matriz'))return'HZ06 — Visconde / Conexão';if(a.includes('são clemente')||a.includes('general severiano'))return'HZ07 — São Clemente / General Severiano';if(['arnaldo quintela','fernandes guimarães','general polidoro','oliveira fausto','dezenove de fevereiro','paulo barreto','real grandeza','mena barreto','são manuel','sorocaba'].some(x=>a.includes(x)))return'HZ01 — Core Botafogo';return'Entorno Botafogo'}function type(v){return v.category.startsWith('Bar')?'B':v.category.startsWith('Rest')?'R':v.category.startsWith('Super')?'M':'D'}function icon(v){const c=v.has_jager?'#137a42':'#e66d2c';return L.divIcon({className:'',html:`<div class="pin"><div class="shape" style="background:${c}"></div><div class="letter">${type(v)}</div></div>`,iconSize:[28,36],iconAnchor:[14,34]})}async function geo(v){const k=v.name+'|'+v.address;if(cache[k])return cache[k];for(const q of [v.name+', '+v.address,v.address]){try{const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q='+encodeURIComponent(q)),a=await r.json();if(a.length){const z={lat:+a[0].lat,lng:+a[0].lon};cache[k]=z;localStorage.setItem('bh95_v2',JSON.stringify(cache));return z}}catch(e){}}return null}function maps(v){return'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.name+' '+v.address)}function pop(v){return`<div class="popup"><b>${v.name}</b><p>${v.category}</p><p>${v.hotzone}</p><p><b>Jäger:</b> ${v.has_jager?'Confirmado':'Não confirmado'}</p><p><b>Status:</b> ${v.status}</p><p>${v.address}</p><p><b>Fonte:</b> ${v.source}</p><a target="_blank" href="${maps(v)}">Google Maps</a>${v.instagram&& !v.instagram.includes('confirmar')?` · <a target="_blank" href="https://instagram.com/${v.instagram.replace('@','')}">Instagram</a>`:''}</div>`}function show(v,f){if(f==='all')return 1;if(f==='jager')return v.has_jager;if(f==='bar')return v.category.startsWith('Bar')||v.category.startsWith('Rest');if(f==='market')return v.category.startsWith('Super');if(f==='bev')return v.category.startsWith('Bebidas');if(f==='new')return v.market_new;if(f==='entorno')return v.hotzone.startsWith('Entorno');return v.hotzone.startsWith(f)}function render(){const el=document.getElementById('list');el.innerHTML='';pts.filter(o=>show(o.v,cur)).sort((a,b)=>a.v.hotzone.localeCompare(b.v.hotzone)||a.v.name.localeCompare(b.v.name)).forEach(o=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<a href="#">${o.v.name}</a><span class="meta">${o.v.category} · ${o.v.hotzone}</span>`;d.querySelector('a').onclick=e=>{e.preventDefault();map.setView([o.lat,o.lng],18);o.m.openPopup()};el.appendChild(d)})}function apply(f){cur=f;const ms=[];pts.forEach(o=>{if(show(o.v,f)){if(!map.hasLayer(o.m))o.m.addTo(map);ms.push(o.m)}else if(map.hasLayer(o.m))map.removeLayer(o.m)});render();if(ms.length)map.fitBounds(L.featureGroup(ms).getBounds().pad(.1))}document.querySelectorAll('button').forEach(b=>b.onclick=()=>{document.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active');apply(b.dataset.f)});async function init(){const chunks=await Promise.all(files.map(f=>fetch(f).then(r=>r.json())));DATA=chunks.flat();DATA.forEach(v=>v.hotzone=hz(v));document.getElementById('nTotal').textContent=DATA.length;document.getElementById('nJager').textContent=DATA.filter(v=>v.has_jager).length;document.getElementById('nBars').textContent=DATA.filter(v=>v.category.startsWith('Bar')||v.category.startsWith('Rest')).length;document.getElementById('nNew').textContent=DATA.filter(v=>v.market_new).length;const hc={};DATA.forEach(v=>hc[v.hotzone]=(hc[v.hotzone]||0)+1);document.getElementById('hz').innerHTML=Object.entries(hc).sort().map(([k,n])=>`<div class="hz">${k}<b>${n}</b></div>`).join('');for(const v of DATA){try{const z=await geo(v);if(!z)continue;const m=L.marker([z.lat,z.lng],{icon:icon(v)}).addTo(map).bindPopup(pop(v)).bindTooltip(v.name,{className:'tip',direction:'top'});pts.push({v,m,lat:z.lat,lng:z.lng})}catch(e){}await new Promise(r=>setTimeout(r,55))}apply('all')}init();</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Botafogo–Humaitá · Censo PDV Jägermeister</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root{--g:#137a42;--o:#e66d2c;--d:#11372a;--c:#f2eee3}
+    *{box-sizing:border-box}
+    body{margin:0;font:12px Arial;background:var(--c)}
+    .app{height:100vh;display:grid;grid-template-columns:380px 1fr}
+    aside{background:var(--d);color:#fff;padding:18px;overflow:auto}
+    main{position:relative}
+    h1{font-size:27px;line-height:1;margin:0;text-transform:uppercase}
+    .sub,.note{font-size:10px;line-height:1.5;color:#cfe0d5}
+    .sub{margin:10px 0 16px}
+    .k{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .k div{padding:10px;border:1px solid #ffffff18;border-radius:9px;background:#ffffff0a}
+    .k b{font-size:25px;display:block}
+    .k span{font-size:8px;text-transform:uppercase;color:#cfe0d5}
+    .t{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#9fbaaa;margin:18px 0 7px}
+    .f{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    button{border:0;border-radius:7px;padding:8px;text-align:left;background:#fff;font-size:10px;font-weight:700;cursor:pointer}
+    button.active{background:#d9f1e1}
+    button:disabled{opacity:.7;cursor:wait}
+    #map{height:100%;width:100%}
+    .leaflet-tile-pane{filter:grayscale(85%) brightness(1.04)}
+    .pin{position:relative;width:28px;height:36px;transform:translate(-14px,-34px)}
+    .shape{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #111;box-shadow:0 2px 6px #0004}
+    .letter{position:absolute;left:0;top:0;width:26px;height:26px;display:grid;place-items:center;font-weight:900;font-size:10px;color:#fff}
+    .tip{background:#fffdf7ee!important;border:1px solid #111!important;color:#111!important;font-size:9px!important;font-weight:700!important;box-shadow:none!important}
+    .tip:before{display:none!important}
+    .legend{position:absolute;z-index:500;right:12px;top:12px;background:#fffdf7f7;padding:10px;border:1px solid #111;border-radius:8px;font-size:10px;line-height:1.6}
+    .sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+    .item,.hz{padding:7px 0;border-bottom:1px solid #ffffff14;font-size:10px}
+    .item a{color:#fff;text-decoration:none;font-weight:700}
+    .meta{display:block;color:#b8cdc0;font-size:9px;margin-top:2px}
+    .hz b{float:right}
+    .popup p{font-size:10px;margin:3px 0}
+    .popup a{display:inline-block;margin-top:5px;color:#111}
+    .loading{padding:8px 0;color:#ffd8b8;font-size:9px;font-weight:700}
+    @media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:48vh 52vh}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Botafogo–Humaitá<br>Censo PDV</h1>
+    <div class="sub">Base ampliada: 95 PDVs. Verde = presença Jäger confirmada. Laranja = presença não confirmada. B = bar · R = restaurante/bar · M = mercado · D = bebidas/conveniência.</div>
+    <div class="k">
+      <div><b id="nTotal">95</b><span>PDVs</span></div>
+      <div><b id="nJager">12</b><span>Jäger confirmado</span></div>
+      <div><b id="nBars">—</b><span>Bares + restaurantes</span></div>
+      <div><b id="nNew">57</b><span>Novos no censo</span></div>
+    </div>
+    <div class="t">Filtros</div>
+    <div class="f">
+      <button class="active" data-f="all">Todos</button>
+      <button data-f="jager">Com Jäger</button>
+      <button data-f="bar">Bares + restaurantes</button>
+      <button data-f="market">Mercados</button>
+      <button data-f="bev">Bebidas</button>
+      <button data-f="new">Novos PDVs</button>
+      <button data-f="HZ01">HZ01 Core</button>
+      <button data-f="HZ02">HZ02 Álvaro Ramos</button>
+      <button data-f="HZ03">HZ03 Voluntários</button>
+      <button data-f="HZ04">HZ04 Farani/Praia</button>
+      <button data-f="HZ05">HZ05 Humaitá/Cobal</button>
+      <button data-f="HZ06">HZ06 Visconde</button>
+      <button data-f="HZ07">HZ07 São Clemente</button>
+      <button data-f="entorno">Entorno</button>
+    </div>
+    <div id="loadState"></div>
+    <div class="t">Hotzones</div>
+    <div id="hz"></div>
+    <div class="t">PDVs visíveis</div>
+    <div id="list"></div>
+    <div class="note">Pesquisa pública + base de acompanhamento Jäger. Novos PDVs ficam como presença não confirmada até cruzamento comercial ou validação em campo.</div>
+  </aside>
+  <main>
+    <div id="map"></div>
+    <div class="legend"><b>Cor</b><br><span class="sw" style="background:#137a42"></span>Jäger confirmado<br><span class="sw" style="background:#e66d2c"></span>Não confirmado<br><br><b>Tipo</b><br>B bar · R restaurante · M mercado · D bebidas</div>
+  </main>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let DATA=[];
+const files=[1,2,3,4,5].map(n=>`data/pdv-${n}.json`);
+const map=L.map('map').setView([-22.9565,-43.188],14.2);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
+
+let cache=JSON.parse(localStorage.getItem('bh95_v2')||'{}');
+let pts=[];
+let cur='all';
+let initDone=false;
+let slowGeoAt=0;
+const pointByKey=new Map();
+
+function key(v){return v.name+'|'+v.address}
+function hz(v){
+  const a=(v.address||'').toLowerCase(),n=parseInt((a.match(/,\s*(\d+)/)||[])[1]||'0');
+  if(a.includes('álvaro ramos'))return'HZ02 — Álvaro Ramos';
+  if(a.includes('voluntários da pátria')&&n>=430)return'HZ05 — Humaitá / Cobal';
+  if(a.includes('voluntários da pátria')||a.includes('nelson mandela')||a.includes('são joão batista'))return'HZ03 — Voluntários / Baixo Botafogo';
+  if(a.includes('farani')||a.includes('bambina')||a.includes('praia de botafogo'))return'HZ04 — Farani / Faculdade / Praia';
+  if(a.includes('capitão salomão')||a.includes('humaitá'))return'HZ05 — Humaitá / Cobal';
+  if(a.includes('visconde de silva')||a.includes('visconde de caravelas')||a.includes('conde de irajá')||a.includes('rua da matriz'))return'HZ06 — Visconde / Conexão';
+  if(a.includes('são clemente')||a.includes('general severiano'))return'HZ07 — São Clemente / General Severiano';
+  if(['arnaldo quintela','fernandes guimarães','general polidoro','oliveira fausto','dezenove de fevereiro','paulo barreto','real grandeza','mena barreto','são manuel','sorocaba'].some(x=>a.includes(x)))return'HZ01 — Core Botafogo';
+  return'Entorno Botafogo';
+}
+function isBar(v){const c=(v.category||'').toLowerCase();return c.startsWith('bar')||c.startsWith('rest')}
+function isMarket(v){const c=(v.category||'').toLowerCase();return c.includes('supermerc')||c==='mercado'||c.startsWith('mercado ')||c.includes('/ mercado')}
+function isBev(v){const c=(v.category||'').toLowerCase();return c.startsWith('bebidas')||c.includes('conveniência')||c.includes('conveniencia')}
+function type(v){if(isBar(v))return (v.category||'').toLowerCase().startsWith('rest')?'R':'B';if(isMarket(v))return'M';return'D'}
+function icon(v){
+  const c=v.has_jager?'#137a42':'#e66d2c';
+  return L.divIcon({className:'',html:`<div class="pin"><div class="shape" style="background:${c}"></div><div class="letter">${type(v)}</div></div>`,iconSize:[28,36],iconAnchor:[14,34]});
+}
+async function requestGeo(q){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'}});
+  if(!r.ok)throw new Error('geocode '+r.status);
+  return r.json();
+}
+async function geo(v){
+  const k=key(v);
+  if(cache[k])return cache[k];
+  for(const q of [v.name+', '+v.address,v.address]){
+    try{
+      const a=await requestGeo(q);
+      if(a.length){
+        const z={lat:+a[0].lat,lng:+a[0].lon};
+        cache[k]=z;
+        localStorage.setItem('bh95_v2',JSON.stringify(cache));
+        return z;
+      }
+    }catch(e){}
+  }
+  return null;
+}
+async function geoSlow(v){
+  const k=key(v);
+  if(cache[k])return cache[k];
+  for(const q of [v.name+', '+v.address,v.address]){
+    const wait=Math.max(0,1150-(Date.now()-slowGeoAt));
+    if(wait)await new Promise(r=>setTimeout(r,wait));
+    slowGeoAt=Date.now();
+    try{
+      const a=await requestGeo(q);
+      if(a.length){
+        const z={lat:+a[0].lat,lng:+a[0].lon};
+        cache[k]=z;
+        localStorage.setItem('bh95_v2',JSON.stringify(cache));
+        return z;
+      }
+    }catch(e){}
+  }
+  return null;
+}
+function maps(v){return'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v.name+' '+v.address)}
+function pop(v){return`<div class="popup"><b>${v.name}</b><p>${v.category}</p><p>${v.hotzone}</p><p><b>Jäger:</b> ${v.has_jager?'Confirmado':'Não confirmado'}</p><p><b>Status:</b> ${v.status}</p><p>${v.address}</p><p><b>Fonte:</b> ${v.source}</p><a target="_blank" href="${maps(v)}">Google Maps</a>${v.instagram&&!v.instagram.includes('confirmar')?` · <a target="_blank" href="https://instagram.com/${v.instagram.replace('@','')}">Instagram</a>`:''}</div>`}
+function show(v,f){
+  if(f==='all')return true;
+  if(f==='jager')return !!v.has_jager;
+  if(f==='bar')return isBar(v);
+  if(f==='market')return isMarket(v);
+  if(f==='bev')return isBev(v);
+  if(f==='new')return !!v.market_new;
+  if(f==='entorno')return v.hotzone.startsWith('Entorno');
+  return v.hotzone.startsWith(f);
+}
+function addPoint(v,z){
+  if(!z||pointByKey.has(key(v)))return;
+  const m=L.marker([z.lat,z.lng],{icon:icon(v)}).bindPopup(pop(v)).bindTooltip(v.name,{className:'tip',direction:'top'});
+  const o={v,m,lat:z.lat,lng:z.lng};
+  pts.push(o);
+  pointByKey.set(key(v),o);
+  if(show(v,cur))m.addTo(map);
+}
+function render(){
+  const el=document.getElementById('list');
+  el.innerHTML='';
+  pts.filter(o=>show(o.v,cur)).sort((a,b)=>a.v.hotzone.localeCompare(b.v.hotzone)||a.v.name.localeCompare(b.v.name)).forEach(o=>{
+    const d=document.createElement('div');
+    d.className='item';
+    d.innerHTML=`<a href="#">${o.v.name}</a><span class="meta">${o.v.category} · ${o.v.hotzone}</span>`;
+    d.querySelector('a').onclick=e=>{e.preventDefault();map.setView([o.lat,o.lng],18);o.m.openPopup()};
+    el.appendChild(d);
+  });
+}
+function drawFilter(f){
+  cur=f;
+  const ms=[];
+  pts.forEach(o=>{
+    if(show(o.v,f)){
+      if(!map.hasLayer(o.m))o.m.addTo(map);
+      ms.push(o.m);
+    }else if(map.hasLayer(o.m))map.removeLayer(o.m);
+  });
+  render();
+  if(ms.length)map.fitBounds(L.featureGroup(ms).getBounds().pad(.1));
+}
+async function hydrateSmallFilter(f){
+  if(!['market','bev'].includes(f))return;
+  const missing=DATA.filter(v=>show(v,f)&&!pointByKey.has(key(v)));
+  if(!missing.length)return;
+  const state=document.getElementById('loadState');
+  state.className='loading';
+  let done=0;
+  state.textContent=`Carregando ${f==='market'?'mercados':'pontos de bebidas'}… 0/${missing.length}`;
+  await new Promise(r=>setTimeout(r,1200));
+  for(const v of missing){
+    const z=await geoSlow(v);
+    if(z)addPoint(v,z);
+    done++;
+    state.textContent=`Carregando ${f==='market'?'mercados':'pontos de bebidas'}… ${done}/${missing.length}`;
+    drawFilter(f);
+  }
+  state.textContent=missing.some(v=>!pointByKey.has(key(v)))?'Alguns endereços não foram localizados automaticamente.':'Filtro carregado.';
+  setTimeout(()=>{state.textContent='';state.className=''},3000);
+}
+async function apply(f){
+  drawFilter(f);
+  if(initDone)await hydrateSmallFilter(f);
+}
+document.querySelectorAll('button').forEach(b=>b.onclick=async()=>{
+  document.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  b.disabled=true;
+  await apply(b.dataset.f);
+  b.disabled=false;
+});
+async function init(){
+  const chunks=await Promise.all(files.map(f=>fetch(f).then(r=>r.json())));
+  DATA=chunks.flat();
+  DATA.forEach(v=>v.hotzone=hz(v));
+  document.getElementById('nTotal').textContent=DATA.length;
+  document.getElementById('nJager').textContent=DATA.filter(v=>v.has_jager).length;
+  document.getElementById('nBars').textContent=DATA.filter(isBar).length;
+  document.getElementById('nNew').textContent=DATA.filter(v=>v.market_new).length;
+  const hc={};
+  DATA.forEach(v=>hc[v.hotzone]=(hc[v.hotzone]||0)+1);
+  document.getElementById('hz').innerHTML=Object.entries(hc).sort().map(([k,n])=>`<div class="hz">${k}<b>${n}</b></div>`).join('');
+
+  // Mantém o carregamento rápido já existente e aproveita o cache local.
+  for(const v of DATA){
+    try{
+      const z=await geo(v);
+      if(z)addPoint(v,z);
+    }catch(e){}
+    await new Promise(r=>setTimeout(r,55));
+  }
+  initDone=true;
+  drawFilter('all');
+}
+init();
+</script>
+</body>
+</html>
