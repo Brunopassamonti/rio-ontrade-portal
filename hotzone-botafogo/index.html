@@ -24,7 +24,8 @@ button{border:0;border-radius:7px;padding:8px;text-align:left;background:#fff;fo
 .legend{position:absolute;z-index:500;right:12px;top:12px;background:#fffdf7f7;padding:10px;border:1px solid #111;border-radius:8px;font-size:10px;line-height:1.6}.sw{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
 .item,.hz{padding:7px 0;border-bottom:1px solid #ffffff14;font-size:10px}.item a{color:#fff;text-decoration:none;font-weight:700}.item a:hover{text-decoration:underline}.meta{display:block;color:#b8cdc0;font-size:9px;margin-top:2px}.geo{display:block;font-size:8px;margin-top:2px;color:#ffd8b3}.geo.ok{color:#bfe7ca}.hz b{float:right}
 .popup p{font-size:10px;margin:3px 0}.popup a{display:inline-block;margin-top:5px;color:#111}
-@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:48vh 52vh}.legend{font-size:9px;right:6px;top:6px}}
+.embed .app{grid-template-columns:1fr}.embed aside{display:none}.embed main{height:100vh}.embed .legend{top:8px;right:8px}
+@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:48vh 52vh}.embed .app{grid-template-rows:1fr}.legend{font-size:9px;right:6px;top:6px}}
 </style>
 </head>
 <body>
@@ -47,7 +48,12 @@ button{border:0;border-radius:7px;padding:8px;text-align:left;background:#fff;fo
 const files=[1,2,3,4,5].map(n=>`data/pdv-${n}.json`);
 const map=L.map('map').setView([-22.9565,-43.188],14.2);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-let DATA=[],pts=[],cur='all',dataLoaded=false,backgroundStarted=false;
+const urlParams=new URLSearchParams(window.location.search);
+const embedMode=urlParams.get('embed')==='1';
+const allowedFilters=new Set(['all','jager','expand','prospectA','prospectB','benchmark','nofit','bar','market','bev','new','entorno','HZ01','HZ02','HZ03','HZ04','HZ05','HZ06','HZ07']);
+const requestedFilter=allowedFilters.has(urlParams.get('filter'))?urlParams.get('filter'):'all';
+if(embedMode)document.body.classList.add('embed');
+let DATA=[],pts=[],cur=requestedFilter,dataLoaded=false,backgroundStarted=false;
 const pointByKey=new Map(),inFlight=new Map();
 const oldCache=JSON.parse(localStorage.getItem('bh95_v2')||'{}');
 const cache={...oldCache,...JSON.parse(localStorage.getItem('bh95_v3')||'{}')};
@@ -86,7 +92,7 @@ async function runPool(items,limit,onProgress){let i=0,done=0;async function wor
 async function loadFilter(f){if(!dataLoaded)return;const targets=DATA.filter(v=>show(v,f));drawFilter(f,false);const missing=targets.filter(v=>!pointByKey.has(key(v)));if(!missing.length){fitCurrent(f);setState(`${targets.length} PDVs no filtro.`);return}const label=f==='market'?'mercados':f==='bev'?'depósitos':'PDVs';setState(`Carregando ${label}… 0/${missing.length}`,true);await runPool(missing,f==='market'||f==='bev'?4:3,(n,total)=>{setState(`Carregando ${label}… ${n}/${total}`,true);drawFilter(f,false)});drawFilter(f,true);const unresolved=targets.filter(v=>!pointByKey.has(key(v))).length;setState(unresolved?`${targets.length-unresolved}/${targets.length} localizados. ${unresolved} endereço(s) sem pin automático.`:`${targets.length} ${label} carregados.`)}
 document.querySelectorAll('button').forEach(b=>b.onclick=async()=>{document.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active');await loadFilter(b.dataset.f)});
 async function backgroundHydrate(){if(backgroundStarted||!dataLoaded)return;backgroundStarted=true;const priority=[...DATA.filter(isMarket),...DATA.filter(isDepot),...DATA.filter(v=>v.has_jager),...DATA.filter(v=>!isMarket(v)&&!isDepot(v)&&!v.has_jager)];const seen=new Set(),unique=priority.filter(v=>{const k=key(v);if(seen.has(k))return false;seen.add(k);return !pointByKey.has(k)});for(const v of unique){if(cur==='market'||cur==='bev'){await new Promise(r=>setTimeout(r,250));continue}await ensurePoint(v);if(cur==='all')drawFilter('all',false);await new Promise(r=>setTimeout(r,120))}if(cur==='all')fitCurrent('all')}
-async function init(){try{const [chunks,fixed]=await Promise.all([Promise.all(files.map(f=>fetch(f).then(r=>{if(!r.ok)throw new Error(f);return r.json()}))),fetch('data/fixed-coords.json').then(r=>r.ok?r.json():{}).catch(()=>({}))]);DATA=chunks.flat();DATA.forEach(v=>v.hotzone=hz(v));dataLoaded=true;Object.assign(cache,fixed||{});saveCache();document.getElementById('nTotal').textContent=DATA.length;document.getElementById('nJager').textContent=DATA.filter(v=>v.has_jager).length;document.getElementById('nProspect').textContent=DATA.filter(v=>layer(v).key==='prospectA'||layer(v).key==='prospectB').length;document.getElementById('nNew').textContent=DATA.filter(v=>v.market_new).length;const hc={};DATA.forEach(v=>hc[v.hotzone]=(hc[v.hotzone]||0)+1);document.getElementById('hz').innerHTML=Object.entries(hc).sort().map(([k,n])=>`<div class="hz">${k}<b>${n}</b></div>`).join('');DATA.forEach(v=>{const z=cache[key(v)];if(z)addPoint(v,z)});drawFilter('all',true);setState('Mapa pronto. Filtros carregam pins sob demanda.');setTimeout(backgroundHydrate,300)}catch(e){console.error(e);setState('Erro ao carregar a base. Atualize a página.',false)}}
+async function init(){try{const [chunks,fixed]=await Promise.all([Promise.all(files.map(f=>fetch(f).then(r=>{if(!r.ok)throw new Error(f);return r.json()}))),fetch('data/fixed-coords.json').then(r=>r.ok?r.json():{}).catch(()=>({}))]);DATA=chunks.flat();DATA.forEach(v=>v.hotzone=hz(v));dataLoaded=true;Object.assign(cache,fixed||{});saveCache();document.getElementById('nTotal').textContent=DATA.length;document.getElementById('nJager').textContent=DATA.filter(v=>v.has_jager).length;document.getElementById('nProspect').textContent=DATA.filter(v=>layer(v).key==='prospectA'||layer(v).key==='prospectB').length;document.getElementById('nNew').textContent=DATA.filter(v=>v.market_new).length;const hc={};DATA.forEach(v=>hc[v.hotzone]=(hc[v.hotzone]||0)+1);document.getElementById('hz').innerHTML=Object.entries(hc).sort().map(([k,n])=>`<div class="hz">${k}<b>${n}</b></div>`).join('');DATA.forEach(v=>{const z=cache[key(v)];if(z)addPoint(v,z)});document.querySelectorAll('button[data-f]').forEach(b=>b.classList.toggle('active',b.dataset.f===cur));drawFilter(cur,true);setState('Mapa pronto. Filtros carregam pins sob demanda.');setTimeout(backgroundHydrate,300)}catch(e){console.error(e);setState('Erro ao carregar a base. Atualize a página.',false)}}
 init();
 </script>
 </body>
