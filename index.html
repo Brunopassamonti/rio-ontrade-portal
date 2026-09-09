@@ -138,6 +138,26 @@
     .footer-actions a{padding:15px 17px;border-radius:14px;text-decoration:none;font-weight:900;text-align:center;background:var(--orange);color:#17201C}
     .footer-actions a:last-child{background:rgba(255,255,255,.09);color:white}
     .legal{text-align:center;color:var(--muted);font-size:11px;margin-top:20px}
+
+    /* Territory Intelligence */
+    .territory-card{display:grid;grid-template-columns:330px minmax(0,1fr);gap:0;overflow:hidden;border-radius:30px;background:var(--forest);color:white;box-shadow:var(--shadow)}
+    .territory-info{padding:30px;display:flex;flex-direction:column;min-height:560px}
+    .territory-kicker{display:inline-flex;align-items:center;gap:7px;width:max-content;padding:7px 10px;border-radius:999px;background:rgba(232,121,36,.14);color:var(--orange-2);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    .territory-info h3{font-size:31px;line-height:1.02;letter-spacing:-.04em;margin:18px 0 10px}
+    .territory-info>p{margin:0;color:#C8D8D0;line-height:1.6;font-size:13px}
+    .territory-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:22px 0}
+    .territory-kpi{padding:13px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08)}
+    .territory-kpi strong{display:block;font-size:25px;letter-spacing:-.04em;color:white}
+    .territory-kpi span{display:block;margin-top:3px;color:#ABC2B7;font-size:9px;text-transform:uppercase;letter-spacing:.05em;line-height:1.35}
+    .territory-filters{display:flex;flex-wrap:wrap;gap:7px}
+    .territory-filter{appearance:none;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#E9F0EC;padding:9px 10px;border-radius:10px;font:800 10px Inter,Arial,sans-serif;cursor:pointer}
+    .territory-filter:hover,.territory-filter.active{background:var(--orange);color:#18201C;border-color:var(--orange)}
+    .territory-open{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:24px;color:white;text-decoration:none;font-size:12px;font-weight:900}
+    .territory-open span:last-child{color:var(--orange-2);font-size:18px}
+    .territory-map{position:relative;min-height:560px;background:#D9DDD7}
+    .territory-map iframe{display:block;width:100%;height:100%;min-height:560px;border:0;background:#E8E7E1}
+    .territory-map-label{position:absolute;z-index:3;left:14px;bottom:14px;padding:8px 10px;border-radius:10px;background:rgba(251,250,246,.9);backdrop-filter:blur(8px);color:var(--forest);font-size:9px;font-weight:900;box-shadow:0 8px 26px rgba(16,39,31,.15);pointer-events:none}
+
     .mobile-dock{display:none}
 
     [data-link].is-disabled,[data-drive].is-disabled{opacity:.5;pointer-events:none}
@@ -151,6 +171,7 @@
       .drive-grid{grid-template-columns:repeat(2,1fr)}
       .fill-body{grid-template-columns:1fr}
       .footer-card{grid-template-columns:1fr}
+      .territory-card{grid-template-columns:1fr}.territory-info{min-height:auto}.territory-map,.territory-map iframe{min-height:500px}
     }
     @media(max-width:560px){
       .shell{width:min(100% - 20px,1180px);padding-top:10px} .topbar{top:8px} .brand span:last-child{display:none}
@@ -162,9 +183,10 @@
       .shortcuts{flex-direction:column} .shortcut{flex:none;width:100%}
       .fill-card>summary{flex-wrap:wrap;row-gap:10px} .fill-cta{margin-left:0;flex:1 1 100%}
       .drive-card{min-height:auto}
+      .territory-info{padding:24px}.territory-kpis{grid-template-columns:repeat(2,1fr)}.territory-map,.territory-map iframe{min-height:440px}
       .footer-card{padding:25px}
-      .mobile-dock{display:grid;position:fixed;z-index:50;left:10px;right:10px;bottom:10px;grid-template-columns:repeat(5,1fr);padding:7px;border-radius:18px;background:rgba(9,26,20,.93);backdrop-filter:blur(16px);box-shadow:0 12px 45px rgba(0,0,0,.24)}
-      .mobile-dock a{padding:10px 4px;text-align:center;color:#DCE8E2;text-decoration:none;font-size:10px;font-weight:800} .mobile-dock a b{display:block;color:var(--orange);font-size:17px;margin-bottom:3px}
+      .mobile-dock{display:grid;position:fixed;z-index:50;left:10px;right:10px;bottom:10px;grid-template-columns:repeat(6,1fr);padding:7px;border-radius:18px;background:rgba(9,26,20,.93);backdrop-filter:blur(16px);box-shadow:0 12px 45px rgba(0,0,0,.24)}
+      .mobile-dock a{padding:10px 3px;text-align:center;color:#DCE8E2;text-decoration:none;font-size:9px;font-weight:800} .mobile-dock a b{display:block;color:var(--orange);font-size:17px;margin-bottom:3px}
     }
   </style>
 </head>
@@ -173,7 +195,7 @@
     <nav class="topbar">
       <a class="brand" href="#top"><span class="brand-mark">J</span><span>Rio On-Trade Operating System</span></a>
       <div class="topnav">
-        <a href="#score">Score</a><a href="#time">Time</a><a href="#pilares">Pilares</a><a href="#arquivos">Arquivos</a>
+        <a href="#score">Score</a><a href="#time">Time</a><a href="#territorio">Território</a><a href="#pilares">Pilares</a><a href="#arquivos">Arquivos</a>
         <a class="cta" data-link="sistemaCompleto" target="_blank" rel="noopener">Abrir sistema completo ↗</a>
       </div>
     </nav>
@@ -241,6 +263,39 @@
           <div class="ba-status"><b>Carteira:</b>&nbsp;a definir</div>
           <div class="ba-status">Projetos em acompanhamento: abrir hub para consulta</div>
           <a class="arrow-link" data-link="iasminHub" target="_blank" rel="noopener"><span>Abrir hub</span><span>→</span></a>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="section" id="territorio">
+      <div class="section-head">
+        <div><div class="eyebrow" style="color:var(--orange)">Territory Intelligence</div><h2>Hotzones, presença e expansão</h2></div>
+        <p>O mapa transforma o território em fila de ação: onde já estamos, onde expandir e onde prospectar.</p>
+      </div>
+      <div class="territory-card">
+        <div class="territory-info">
+          <span class="territory-kicker">Piloto · Botafogo–Humaitá</span>
+          <h3>Território antes da rota.</h3>
+          <p>Censo digital + leitura comercial para priorizar campo. A base online indica hipótese; o BA valida presença, execução e oportunidade presencialmente.</p>
+          <div class="territory-kpis">
+            <div class="territory-kpi"><strong data-territory="total">95</strong><span>PDVs mapeados</span></div>
+            <div class="territory-kpi"><strong data-territory="jager">12</strong><span>Jäger confirmado</span></div>
+            <div class="territory-kpi"><strong data-territory="new">57</strong><span>Novos no censo</span></div>
+            <div class="territory-kpi"><strong>7 +</strong><span>Hotzones + entorno</span></div>
+          </div>
+          <div class="territory-filters" aria-label="Filtros do mapa">
+            <button class="territory-filter active" type="button" data-map-filter="all">Todos</button>
+            <button class="territory-filter" type="button" data-map-filter="jager">Jäger ativos</button>
+            <button class="territory-filter" type="button" data-map-filter="expand">Expansão</button>
+            <button class="territory-filter" type="button" data-map-filter="prospectA">Prioritários</button>
+            <button class="territory-filter" type="button" data-map-filter="new">Novos</button>
+          </div>
+          <a class="territory-open" data-link="hotzoneFull" target="_blank" rel="noopener"><span>Abrir Hotzone Intelligence completo</span><span>↗</span></a>
+        </div>
+        <div class="territory-map">
+          <iframe id="territory-map-frame" title="Mapa Hotzone Intelligence Botafogo–Humaitá" loading="lazy" src="hotzone-botafogo/?embed=1&amp;filter=all"></iframe>
+          <div class="territory-map-label">Clique nos filtros para mudar a leitura do mapa</div>
         </div>
       </div>
     </section>
@@ -313,7 +368,7 @@
     <div class="legal">Jägermeister Rio On-Trade Operating System · versão estrutural 06/08/2026</div>
   </main>
 
-  <nav class="mobile-dock"><a href="#top"><b>⌂</b>Home</a><a href="#score"><b>◆</b>Score</a><a href="#time"><b>◎</b>Time</a><a href="#pilares"><b>▦</b>Pilares</a><a href="#arquivos"><b>⎘</b>Arquivos</a></nav>
+  <nav class="mobile-dock"><a href="#top"><b>⌂</b>Home</a><a href="#score"><b>◆</b>Score</a><a href="#time"><b>◎</b>Time</a><a href="#territorio"><b>⌖</b>Território</a><a href="#pilares"><b>▦</b>Pilares</a><a href="#arquivos"><b>⎘</b>Arquivos</a></nav>
 
   <script>
     // Configuração central de links — troque aqui, nunca direto no HTML.
@@ -340,6 +395,7 @@
       contratosInvestimentos: sheet("757531670"),
       projetosEventos: sheet("966247200"),
       trackerDecisoes: sheet("1919488920"),
+      hotzoneFull: "hotzone-botafogo/",
 
       driveStrategyUrl: "", // DRIVE_STRATEGY_URL — pasta de estratégia e apresentações
       driveBrandUrl: "",    // DRIVE_BRAND_URL — pasta de brand assets
@@ -374,6 +430,35 @@
           el.title = "Configure a URL da pasta em APP_LINKS";
         }
       });
+    });
+
+
+    // Territory Intelligence — mapa incorporado + KPIs lidos da própria base do censo.
+    document.addEventListener("DOMContentLoaded", function(){
+      var frame = document.getElementById("territory-map-frame");
+      document.querySelectorAll("[data-map-filter]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var filter = btn.getAttribute("data-map-filter") || "all";
+          document.querySelectorAll("[data-map-filter]").forEach(function(x){ x.classList.remove("active"); });
+          btn.classList.add("active");
+          if (frame) frame.src = "hotzone-botafogo/?embed=1&filter=" + encodeURIComponent(filter);
+        });
+      });
+
+      var files = [1,2,3,4,5].map(function(n){ return "hotzone-botafogo/data/pdv-" + n + ".json"; });
+      Promise.all(files.map(function(url){
+        return fetch(url).then(function(r){ if(!r.ok) throw new Error(url); return r.json(); });
+      })).then(function(chunks){
+        var data = chunks.reduce(function(acc, part){ return acc.concat(part); }, []);
+        var stats = {
+          total: data.length,
+          jager: data.filter(function(v){ return !!v.has_jager; }).length,
+          new: data.filter(function(v){ return !!v.market_new; }).length
+        };
+        Object.keys(stats).forEach(function(key){
+          document.querySelectorAll('[data-territory="' + key + '"]').forEach(function(el){ el.textContent = stats[key]; });
+        });
+      }).catch(function(){ /* mantém fallback visual */ });
     });
 
     // Dado vivo — números puxados direto do Google Sheets, sem backend.
